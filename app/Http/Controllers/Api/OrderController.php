@@ -5,9 +5,19 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CreateOrderRequest;
 use App\Models\Order;
+use App\Models\User;
+use App\Notifications\NewOrderNotification;
 use App\Http\Resources\OrderResource;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
+
+/**
+ * @OA\Tag(
+ *     name="Order",
+ *     description="API Endpoints for Order"
+ * )
+ */
 class OrderController extends Controller
 {
     protected $orderService;
@@ -43,13 +53,17 @@ class OrderController extends Controller
     public function store(CreateOrderRequest $request)
     {
         $this->authorize('create', Order::class);
-        
+
         $order = Order::create([
             'user_id' => $request->user()->id,
             'status' => 'pending',
             ...$request->validated()
         ]);
 
+        // Notify all admins
+        User::role('admin')->each(function ($admin) use ($order) {
+            $admin->notify(new NewOrderNotification($order));
+        });
         return new OrderResource($order);
     }
     /**
