@@ -2,233 +2,85 @@
 
 namespace Tests\Feature\Auth;
 
-use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Hash;
+use Livewire\Volt\Volt;
+use Tests\TestCase;
 
-class AuthenticationTest extends BaseTestCase
+class AuthenticationTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function setUp(): void
+    public function test_login_screen_can_be_rendered(): void
     {
-        parent::setUp();
-        $this->seed(); // Run seeders for roles
+        $response = $this->get('/login');
+
+        $response
+            ->assertOk()
+            ->assertSeeVolt('pages.auth.login');
     }
 
-    /** @test */
-    public function user_can_register_with_valid_data()
+    public function test_users_can_authenticate_using_the_login_screen(): void
     {
-        $response = $this->postJson('/api/v1/auth/register', [
-            'name' => 'John Doe',
-            'email' => 'john@example.com',
-            'password' => 'Password123!',
-            'password_confirmation' => 'Password123!',
-            'phone' => '1234567890'
-        ]);
+        $user = User::factory()->create();
 
-        $response->assertStatus(201)
-            ->assertJsonStructure([
-                'user' => ['id', 'name', 'email'],
-                'token'
-            ]);
+        $component = Volt::test('pages.auth.login')
+            ->set('form.email', $user->email)
+            ->set('form.password', 'password');
 
-        $this->assertDatabaseHas('users', [
-            'email' => 'john@example.com'
-        ]);
+        $component->call('login');
 
-        // Verify role assignment
-        $user = User::where('email', 'john@example.com')->first();
-        $this->assertTrue($user->hasRole('customer'));
+        $component
+            ->assertHasNoErrors()
+            ->assertRedirect(route('dashboard', absolute: false));
+
+        $this->assertAuthenticated();
     }
 
-    /** @test */
-    public function registration_validates_email_format()
+    public function test_users_can_not_authenticate_with_invalid_password(): void
     {
-        $response = $this->postJson('/api/v1/auth/register', [
-            'name' => 'John Doe',
-            'email' => 'invalid-email',
-            'password' => 'Password123!',
-            'password_confirmation' => 'Password123!',
-            'phone' => '1234567890'
-        ]);
+        $user = User::factory()->create();
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['email']);
+        $component = Volt::test('pages.auth.login')
+            ->set('form.email', $user->email)
+            ->set('form.password', 'wrong-password');
+
+        $component->call('login');
+
+        $component
+            ->assertHasErrors()
+            ->assertNoRedirect();
+
+        $this->assertGuest();
     }
 
-    /** @test */
-    public function registration_prevents_duplicate_emails()
+    public function test_navigation_menu_can_be_rendered(): void
     {
-        // Create initial user
-        User::create([
-            'name' => 'Existing User',
-            'email' => 'john@example.com',
-            'password' => Hash::make('password'),
-            'phone' => '1234567890'
-        ]);
+        $user = User::factory()->create();
 
-        $response = $this->postJson('/api/v1/auth/register', [
-            'name' => 'John Doe',
-            'email' => 'john@example.com',
-            'password' => 'Password123!',
-            'password_confirmation' => 'Password123!',
-            'phone' => '1234567890'
-        ]);
+        $this->actingAs($user);
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['email']);
+        $response = $this->get('/dashboard');
+
+        $response
+            ->assertOk()
+            ->assertSeeVolt('layout.navigation');
     }
 
-    /** @test */
-    public function registration_validates_password_strength()
+    public function test_users_can_logout(): void
     {
-        $weakPasswords = [
-            'short', // too short
-            'onlylowercase',
-            'ONLYUPPERCASE',
-            '12345678',
-            'nospecialchars123'
-        ];
+        $user = User::factory()->create();
 
-        foreach ($weakPasswords as $password) {
-            $response = $this->postJson('/api/v1/auth/register', [
-                'name' => 'John Doe',
-                'email' => 'john@example.com',
-                'password' => $password,
-                'password_confirmation' => $password,
-                'phone' => '1234567890'
-            ]);
-            $response->assertStatus(422)
-                ->assertJsonValidationErrors(['password']);
-        }
-    }
+        $this->actingAs($user);
 
-    /** @test */
-    public function user_can_login_with_correct_credentials()
-    {
-        $user = User::create([
-            'name' => 'John Doe',
-            'email' => 'john@example.com',
-            'password' => Hash::make('Password123!'),
-            'phone' => '1234567890'
-        ]);
-        $user->assignRole('customer');
+        $component = Volt::test('layout.navigation');
 
-        $response = $this->postJson('/api/v1/auth/login', [
-            'email' => 'john@example.com',
-            'password' => 'Password123!'
-        ]);
+        $component->call('logout');
 
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-                'user' => ['id', 'name', 'email'],
-                'token'
-            ]);
-    }
+        $component
+            ->assertHasNoErrors()
+            ->assertRedirect('/');
 
-    /** @test */
-    public function login_fails_with_incorrect_password()
-    {
-        $user = User::create([
-            'name' => 'John Doe',
-            'email' => 'john@example.com',
-            'password' => Hash::make('Password123!'),
-            'phone' => '1234567890'
-        ]);
-
-        $response = $this->postJson('/api/v1/auth/login', [
-            'email' => 'john@example.com',
-            'password' => 'WrongPassword123!'
-        ]);
-
-        $response->assertStatus(401)
-            ->assertJson([
-                'message' => 'Invalid credentials'
-            ]);
-    }
-
-    /** @test */
-    public function login_fails_with_unverified_email_if_verification_required()
-    {
-        // Only if email verification is required
-        if (config('auth.verify_email')) {
-            $user = User::create([
-                'name' => 'John Doe',
-                'email' => 'john@example.com',
-                'password' => Hash::make('Password123!'),
-                'phone' => '1234567890'
-            ]);
-
-            $response = $this->postJson('/api/v1/auth/login', [
-                'email' => 'john@example.com',
-                'password' => 'Password123!'
-            ]);
-
-            $response->assertStatus(403)
-                ->assertJson([
-                    'message' => 'Email not verified'
-                ]);
-        }
-    }
-
-    /** @test */
-    public function user_can_logout()
-    {
-        $user = User::create([
-            'name' => 'John Doe',
-            'email' => 'john@example.com',
-            'password' => Hash::make('Password123!'),
-            'phone' => '1234567890'
-        ]);
-
-        $token = $user->createToken('test-token')->plainTextToken;
-
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $token,
-        ])->postJson('/api/v1/auth/logout');
-
-        $response->assertStatus(200);
-
-        // Verify token was deleted
-        $this->assertDatabaseMissing('personal_access_tokens', [
-            'tokenable_id' => $user->id
-        ]);
-    }
-
-    /** @test */
-    public function logout_fails_with_invalid_token()
-    {
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer invalid-token',
-        ])->postJson('/api/v1/auth/logout');
-
-        $response->assertStatus(401);
-    }
-
-    /** @test */
-    public function multiple_devices_can_login()
-    {
-        $user = User::create([
-            'name' => 'John Doe',
-            'email' => 'john@example.com',
-            'password' => Hash::make('Password123!'),
-            'phone' => '1234567890'
-        ]);
-
-        // Login from multiple devices
-        for ($i = 0; $i < 3; $i++) {
-            $response = $this->postJson('/api/v1/auth/login', [
-                'email' => 'john@example.com',
-                'password' => 'Password123!'
-            ]);
-
-            $response->assertStatus(200)
-                ->assertJsonStructure(['token']);
-        }
-
-        // Verify multiple tokens exist
-        $this->assertEquals(3, $user->tokens()->count());
+        $this->assertGuest();
     }
 }

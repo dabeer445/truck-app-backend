@@ -10,6 +10,7 @@ use App\Notifications\NewOrderNotification;
 use App\Http\Resources\OrderResource;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Notification;
 
 
 /**
@@ -60,10 +61,14 @@ class OrderController extends Controller
             ...$request->validated()
         ]);
 
+        $orderNotification = new NewOrderNotification($order);
         // Notify all admins
-        User::role('admin')->each(function ($admin) use ($order) {
-            $admin->notify(new NewOrderNotification($order));
+        User::role('admin')->each(function ($admin) use ($orderNotification) {
+            Notification::sendNow($admin, $orderNotification);
+
         });
+
+
         return new OrderResource($order);
     }
     /**

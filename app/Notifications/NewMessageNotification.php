@@ -23,14 +23,41 @@ class NewMessageNotification extends Notification implements ShouldQueue
     {
         return ['database', 'mail'];
     }
-
+    protected function getTitle(): string
+    {
+        return "New Message";
+    }
+    
+    protected function getMessage(): string
+    {
+        return Str::limit($this->message->content, 100);
+    }
+    
+    protected function getOrderId(): int
+    {
+        return $this->message->order_id;
+    }
+    
+    protected function getSenderId(): int
+    {
+        return $this->message->sender_id;
+    }
+    
+    protected function getExtraData(): array
+    {
+        return [
+            'message_id' => $this->message->id
+        ];
+    }
     public function toDatabase($notifiable)
     {
         return [
-            'message_id' => $this->message->id,
-            'order_id' => $this->message->order_id,
-            'sender_id' => $this->message->sender_id,
-            'content' => Str::limit($this->message->content, 100),
+            'type' => 'new_message', 
+            'title' => $this->getTitle(),
+            'message' => $this->getMessage(),
+            'order_id' => $this->getOrderId(),
+            'sender_id' => $this->getSenderId(),
+            'extra_data' => $this->getExtraData(),
         ];
     }
 

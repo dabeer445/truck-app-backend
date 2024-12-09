@@ -21,6 +21,13 @@ class Order extends Model
         'notes'
     ];
 
+    const STATUSES = [
+        'pending',
+        'in_progress',
+        'completed',
+        'cancelled'
+    ];
+    
     protected $casts = [
         'cargo_details' => 'array',
         'pickup_time' => 'datetime',
@@ -30,5 +37,9 @@ class Order extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+    public function messages()
+    {
+        return $this->hasMany(Message::class);
     }
 }

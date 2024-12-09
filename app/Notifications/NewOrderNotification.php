@@ -28,18 +28,44 @@ class NewOrderNotification extends Notification implements ShouldQueue
     {
         return ['database', 'mail']; // Can add more channels
     }
+    protected function getTitle(): string
+    {
+        return "New Order #{$this->order->id}";
+    }
 
+    protected function getMessage(): string
+    {
+        return "New order created";
+    }
+
+    protected function getOrderId(): int
+    {
+        return $this->order->id;
+    }
+
+    protected function getSenderId(): ?int
+    {
+        return $this->order->user_id;
+    }
+
+    protected function getExtraData(): array
+    {
+        return [
+            'pickup_location' => $this->order->pickup_location,
+            'delivery_location' => $this->order->delivery_location,
+            'status' => $this->order->status,
+
+        ];
+    }
     public function toDatabase($notifiable): array
     {
         return [
-            'order_id' => $this->order->id,
             'type' => 'new_order',
-            'message' => "New order #{$this->order->id} created",
-            'data' => [
-                'pickup_location' => $this->order->pickup_location,
-                'delivery_location' => $this->order->delivery_location,
-                'status' => $this->order->status,
-            ]
+            'title' => $this->getTitle(),
+            'message' => $this->getMessage(),
+            'order_id' => $this->getOrderId(),
+            'sender_id' => $this->getSenderId(),
+            'extra_data' => $this->getExtraData(),
         ];
     }
     /**

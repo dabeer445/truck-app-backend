@@ -11,11 +11,14 @@
         "laravel/framework": "^11.31",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
+        "livewire/livewire": "^3.5",
+        "livewire/volt": "^1.0",
         "spatie/laravel-permission": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
         "knuckleswtf/scribe": "^4.38",
+        "laravel/breeze": "^2.2",
         "laravel/pail": "^1.1",
         "laravel/pint": "^1.13",
         "laravel/sail": "^1.26",

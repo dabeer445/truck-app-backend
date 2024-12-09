@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\Message;
+use App\Models\User;
 use App\Http\Resources\MessageResource;
 use App\Notifications\NewMessageNotification;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Notification;
 
 /**
  * @OA\Tag(
@@ -44,8 +46,8 @@ class MessageController extends Controller
     public function index(Request $request)
     {
         $messages = Message::where(function ($query) {
-            $query->where('sender_id', request()->id())
-                ->orWhere('receiver_id', request()->id());
+            $query->where('sender_id', auth('sanctum')->id())
+                ->orWhere('receiver_id', auth('sanctum')->id());
         });
 
         // Filter by order if provided
@@ -83,17 +85,30 @@ class MessageController extends Controller
     {
         $validated = $request->validate([
             'order_id' => 'required|exists:orders,id',
-            'receiver_id' => 'required|exists:users,id',
             'content' => 'required|string|max:1000',
         ]);
 
+        if ($request->user()->hasRole('customer')) {
+            $admin = User::whereHas('roles', function ($query) {
+                $query->where('name', 'admin');
+            })->first();
+            $receiverId = $admin->id;
+        } else {
+            $rece_validated = $request->validate([
+                'receiver_id' => 'required|exists:users,id',
+            ]);
+            $receiverId = $request->input('receiver_id'); // Use the provided receiver_id
+        }
+
+
         $message = Message::create([
             ...$validated,
-            'sender_id' => request()->id(),
+            'receiver_id' => $receiverId,
+            'sender_id' => auth('sanctum')->id(),
         ]);
 
         // Notify the receiver
-        $message->receiver->notify(new NewMessageNotification($message));
+        Notification::sendNow($message->receiver, new NewMessageNotification($message));
 
         return new MessageResource($message);
     }
@@ -124,7 +139,7 @@ class MessageController extends Controller
      */
     public function markAsRead($id)
     {
-        $message = Message::where('receiver_id', request()->id())
+        $message = Message::where('receiver_id', auth('sanctum')->id())
             ->findOrFail($id);
 
         $message->markAsRead();
@@ -145,7 +160,7 @@ class MessageController extends Controller
      */
     public function getUnreadCount()
     {
-        $count = Message::where('receiver_id', request()->id())
+        $count = Message::where('receiver_id', auth('sanctum')->id())
             ->where('is_read', false)
             ->count();
 
@@ -178,8 +193,8 @@ class MessageController extends Controller
     {
         $messages = Message::where('order_id', $order->id)
             ->where(function ($query) {
-                $query->where('sender_id', request()->id())
-                    ->orWhere('receiver_id', request()->id());
+                $query->where('sender_id', auth('sanctum')->id())
+                    ->orWhere('receiver_id', auth('sanctum')->id());
             })
             ->latest()
             ->paginate(15);
