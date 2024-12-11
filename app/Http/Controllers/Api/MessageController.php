@@ -56,7 +56,7 @@ class MessageController extends Controller
         }
 
         return MessageResource::collection(
-            $messages->latest()->paginate(15)
+            $messages->latest()->paginate($request->per_page ?? 10)
         );
     }
 

@@ -88,7 +88,7 @@ class OrderController extends Controller
     {
         $orders = Order::where('user_id', $request->user()->id)
             ->latest()
-            ->paginate(10);
+            ->paginate($request->per_page ?? 10);
 
         return OrderResource::collection($orders);
     }

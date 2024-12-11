@@ -61,7 +61,6 @@ class NotificationController extends Controller
     public function index(Request $request)
     {
         $query = request()->user()->notifications();
-
         // Filter by read/unread
         if ($request->has('read')) {
             $query = $request->read ?

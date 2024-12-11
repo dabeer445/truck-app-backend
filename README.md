@@ -1,66 +1,345 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Truck App API Documentation
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## Overview
+API Documentation for Truck App Backend
 
-## About Laravel
+- **Version:** 1.0.0
+- **Contact:** dabeer445@gmail.com
+- **Server:** http://localhost:8000
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Authentication
+All protected endpoints require Bearer token authentication:
+```
+Authorization: Bearer <token>
+```
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## API Endpoints
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Authentication
 
-## Learning Laravel
+#### Register a new user
+```http
+POST /api/v1/auth/register
+```
+Creates a new user account and returns access token.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+**Request Body:**
+```json
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "password123",
+  "phone": "+1234567890"
+}
+```
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+**Responses:**
+- `201`: User registered successfully
+- `422`: Validation error
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+#### Login
+```http
+POST /api/v1/auth/login
+```
 
-## Laravel Sponsors
+**Request Body:**
+```json
+{
+  "email": "john@example.com",
+  "password": "password123"
+}
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+**Responses:**
+- `200`: Login successful
+- `401`: Invalid credentials
+- `422`: Validation error
 
-### Premium Partners
+#### Logout
+```http
+POST /api/v1/auth/logout
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+**Responses:**
+- `200`: Logout successful
+- `401`: Unauthenticated
 
-## Contributing
+### Orders
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+#### List Orders
+```http
+GET /api/v1/orders
+```
+Retrieve a paginated list of orders.
 
-## Code of Conduct
+**Responses:**
+- `200`: List of orders
+- `401`: Unauthorized
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+#### Create Order
+```http
+POST /api/v1/orders
+```
 
-## Security Vulnerabilities
+**Request Body:**
+```json
+{
+  "pickup_location": "123 Pickup St",
+  "delivery_location": "456 Delivery Ave",
+  "cargo_details": {
+    "weight": 100,
+    "dimensions": {
+      "length": 10,
+      "width": 10,
+      "height": 10
+    }
+  },
+  "pickup_time": "2023-10-01T10:00:00Z",
+  "delivery_time": "2023-10-02T10:00:00Z"
+}
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+**Responses:**
+- `201`: Order created successfully
+- `422`: Validation error
 
-## License
+#### Get Order Details
+```http
+GET /api/v1/orders/{id}
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+**Responses:**
+- `200`: Order details
+- `404`: Order not found
+
+#### Cancel Order
+```http
+DELETE /api/v1/orders/{id}/cancel
+```
+
+**Responses:**
+- `200`: Order cancelled successfully
+- `422`: Only pending orders can be cancelled
+- `404`: Order not found
+
+### Messages
+
+#### Get Messages
+```http
+GET /messages
+```
+
+**Query Parameters:**
+- `order_id`: Filter messages by order ID (optional)
+
+**Responses:**
+- `200`: List of messages
+
+#### Send Message
+```http
+POST /messages
+```
+
+**Request Body:**
+```json
+{
+  "order_id": 1,
+  "receiver_id": 1,
+  "content": "Message content"
+}
+```
+
+**Responses:**
+- `201`: Message sent successfully
+- `422`: Validation error
+
+#### Mark Message as Read
+```http
+PUT /messages/{id}/read
+```
+
+**Responses:**
+- `200`: Message marked as read
+- `404`: Message not found
+
+#### Get Unread Count
+```http
+GET /messages/unread-count
+```
+
+**Responses:**
+- `200`: Count of unread messages
+
+### Notifications
+
+#### List Notifications
+```http
+GET /api/notifications
+```
+
+**Query Parameters:**
+- `read`: Filter by read/unread status (boolean)
+- `type`: Filter by notification type
+- `from`: Filter from date (datetime)
+- `to`: Filter to date (datetime)
+
+**Responses:**
+- `200`: List of notifications
+
+#### Mark Notification as Read
+```http
+POST /api/notifications/{id}/read
+```
+
+**Responses:**
+- `200`: Notification marked as read
+- `404`: Notification not found
+
+#### Mark All as Read
+```http
+POST /api/notifications/read
+```
+
+**Responses:**
+- `200`: All notifications marked as read
+
+#### Delete Notification
+```http
+DELETE /api/notifications/{id}
+```
+
+**Responses:**
+- `200`: Notification deleted
+- `404`: Notification not found
+
+### User Profile
+
+#### Get Profile
+```http
+GET /api/v1/user/profile
+```
+
+**Responses:**
+- `200`: User profile information
+- `401`: Unauthenticated
+
+#### Update Profile
+```http
+PUT /api/v1/user/profile
+```
+
+**Request Body:**
+```json
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "+1234567890"
+}
+```
+
+**Responses:**
+- `200`: Profile updated successfully
+- `422`: Validation error
+
+### Admin Endpoints
+
+#### List All Orders (Admin)
+```http
+GET /api/v1/admin/orders
+```
+
+**Query Parameters:**
+- `status`: Filter by status (pending/in_progress/completed/cancelled)
+- `from`: Filter from date (Y-m-d)
+- `to`: Filter to date (Y-m-d)
+- `per_page`: Items per page (default: 10)
+
+**Responses:**
+- `200`: List of all orders
+- `401`: Unauthenticated
+- `403`: Unauthorized access
+
+#### Update Order Status (Admin)
+```http
+PUT /api/v1/admin/orders/{order}/status
+```
+
+**Request Body:**
+```json
+{
+  "status": "in_progress"
+}
+```
+
+**Responses:**
+- `200`: Status updated successfully
+- `404`: Order not found
+- `422`: Validation error
+
+## Models
+
+### Order
+```json
+{
+  "id": 1,
+  "user_id": 1,
+  "pickup_location": "123 Pickup St",
+  "delivery_location": "456 Delivery Ave",
+  "cargo_details": {
+    "weight": "50kg",
+    "dimensions": "100x50x75cm"
+  },
+  "pickup_time": "datetime",
+  "delivery_time": "datetime",
+  "status": "pending",
+  "created_at": "datetime",
+  "updated_at": "datetime",
+  "deleted_at": null
+}
+```
+
+### User
+```json
+{
+  "id": 1,
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "+1234567890",
+  "email_verified_at": null,
+  "created_at": "datetime",
+  "updated_at": "datetime",
+  "roles": [
+    {
+      "id": 1,
+      "name": "admin",
+      "guard_name": "web"
+    }
+  ]
+}
+```
+
+### Message
+```json
+{
+  "id": 1,
+  "order_id": 1,
+  "sender_id": 1,
+  "receiver_id": 1,
+  "content": "string",
+  "is_read": false,
+  "created_at": "datetime",
+  "updated_at": "datetime"
+}
+```
+
+### Notification
+```json
+{
+  "id": 1,
+  "type": "string",
+  "data": {},
+  "read_at": "datetime",
+  "created_at": "datetime",
+  "updated_at": "datetime"
+}
+```

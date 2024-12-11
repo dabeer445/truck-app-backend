@@ -18,12 +18,14 @@ class CreateOrderRequest extends FormRequest
             'delivery_location' => 'required|string|max:255',
             'cargo_details' => 'required|array',
             'cargo_details.weight' => 'required|numeric|min:1|max:5000',
-            'cargo_details.dimensions' => 'required|array',
-            'cargo_details.dimensions.length' => 'required|numeric|min:1',
-            'cargo_details.dimensions.width' => 'required|numeric|min:1',
-            'cargo_details.dimensions.height' => 'required|numeric|min:1',
-            'pickup_time' => 'required|date|after:now',
-            'delivery_time' => 'required|date|after:pickup_time',
+            'cargo_details.dimensions' => 'array',
+            'cargo_details.dimensions.length' => 'numeric|min:1',
+            'cargo_details.dimensions.width' => 'numeric|min:1',
+            'cargo_details.dimensions.height' => 'numeric|min:1',
+            // 'pickup_time' => 'required|date|after:now',
+            // 'delivery_time' => 'required|date|after:pickup_time',
+            'pickup_time' => 'required|date',
+            'delivery_time' => 'required|date',
         ];
     }
 }
