@@ -33,4 +33,18 @@ class User extends Authenticatable
     {
         return $this->hasMany(Order::class);
     }
+    public function orderStats()
+    {
+        return [
+            'total_orders' => $this->orders()->count(),
+            'status_counts' => $this->orders()
+                ->selectRaw('status, COUNT(*) as count')
+                ->groupBy('status')
+                ->pluck('count', 'status')
+                ->toArray() + array_combine(
+                    Order::STATUSES,
+                    array_map(fn() => 0, Order::STATUSES)
+                )
+        ];
+    }
 }

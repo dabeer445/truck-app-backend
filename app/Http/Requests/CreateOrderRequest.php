@@ -22,10 +22,8 @@ class CreateOrderRequest extends FormRequest
             'cargo_details.dimensions.length' => 'numeric|min:1',
             'cargo_details.dimensions.width' => 'numeric|min:1',
             'cargo_details.dimensions.height' => 'numeric|min:1',
-            // 'pickup_time' => 'required|date|after:now',
-            // 'delivery_time' => 'required|date|after:pickup_time',
-            'pickup_time' => 'required|date',
-            'delivery_time' => 'required|date',
+            'pickup_time' => 'required|date|after:now',
+            'delivery_time' => 'required|date|after:pickup_time',
         ];
     }
 }
